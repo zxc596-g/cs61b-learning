@@ -108,17 +108,165 @@ public class Model extends Observable {
      * */
     public boolean tilt(Side side) {
         boolean changed;
+        System.out.println(">>> 接收到按键请求，方向为: " + side);
         changed = false;
-
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
-
+        board.setViewingPerspective(side);
+        for(int col=0;col<board.size();col++){
+            int colnumber=getcolnumber(col);
+            switch(colnumber){
+                case 0:{
+                    break;
+                }
+                case 1:{
+                    for(int row=0;row< board.size()-1;row++){
+                        if(tile(col,row)!=null){
+                            Tile t=tile(col,row);
+                            board.move(col,3,t);
+                            changed=true;
+                            break;
+                        }else{
+                            continue;
+                        }
+                    }
+                    break;
+                }
+                case 2:{
+                    int []arr=new int[2];
+                    int dex=0;
+                    for(int row=0;row< board.size();row++) {
+                        if (tile(col, row) != null) {
+                            arr[dex++]=row;
+                        }
+                    }
+                    Tile t1=tile(col,arr[0]);
+                    Tile t2=tile(col,arr[1]);
+                    if(t1.value()==t2.value()){
+                        board.move(col,3,t2);
+                        board.move(col,3,t1);
+                        score+=tile(col,3).value();
+                        changed=true;
+                    }else{
+                        if(board.tile(col,3)==null){
+                            board.move(col,3,t2);
+                            board.move(col,2,t1);
+                            changed=true;
+                        }else{
+                            if(board.tile(col,2)==null){
+                                board.move(col,2,t1);
+                                changed=true;
+                            }
+                        }
+                    }
+                    break;
+                }
+                case 3:{
+                    int []arr=new int[3];
+                    int dex=0;
+                    for(int row=0;row< board.size();row++) {
+                        if (tile(col, row) != null) {
+                            arr[dex++]=row;
+                        }
+                    }
+                    Tile t1=tile(col,arr[0]);
+                    Tile t2=tile(col,arr[1]);
+                    Tile t3=tile(col,arr[2]);
+//t1 below t2,t2 below t3
+                    if(threenumber(col,t1,t2,t3)){
+                        changed=true;
+                    }
+                    break;
+                }
+                case 4:{
+                    int []arr=new int[4];
+                    int dex=0;
+                    for(int row=0;row< board.size();row++) {
+                        if (tile(col, row) != null) {
+                            arr[dex++]=row;
+                        }
+                    }
+                    Tile t1=tile(col,arr[0]);
+                    Tile t2=tile(col,arr[1]);
+                    Tile t3=tile(col,arr[2]);
+                    Tile t4=tile(col,arr[3]);
+                    if(fournumber(col,t1,t2,t3,t4)){
+                        changed=true;
+                    }
+                    break;
+                }
+            }
+        }
+        board.setViewingPerspective(Side.NORTH);
         checkGameOver();
         if (changed) {
             setChanged();
+            notifyObservers();
         }
         return changed;
+    }
+
+    public int getcolnumber(int col) {
+        int number = 0;
+        for (int row = 0; row < board.size(); row++) {
+            if (tile(col, row) != null) {
+                number++;
+            }
+        }
+        return number;
+    }
+
+    public boolean threenumber(int col,Tile t1,Tile t2,Tile t3){
+         if(t2.value()==t3.value()){
+            board.move(col,3,t3);
+            board.move(col,3,t2);
+            board.move(col,2,t1);
+            score+=board.tile(col,3).value();
+            return true;
+        }else if(t1.value()==t2.value()){
+            board.move(col,3,t3);
+            board.move(col,2,t2);
+            board.move(col,2,t1);
+             score+=board.tile(col,2).value();
+             return true;
+        }else{
+             if(board.tile(col,0)==null){
+                 return false;
+             }else{
+                 board.move(col,3,t3);
+                 board.move(col,2,t2);
+                 board.move(col,1,t1);
+                 return true;
+             }
+         }
+    }
+
+    public boolean fournumber(int col,Tile t1,Tile t2,Tile t3,Tile t4){
+        if(t4.value()==t3.value()&&t2.value()==t1.value()){
+            board.move(col,3,t3);
+            board.move(col,2,t2);
+            board.move(col,2,t1);
+            score+=(board.tile(col,3).value()+board.tile(col,2).value());
+            return true;
+        } else if(t4.value()==t3.value()){
+            board.move(col,3,t3);
+            board.move(col,2,t2);
+            board.move(col,1,t1);
+            score+=board.tile(col,3).value();
+            return true;
+        }else if(t3.value()==t2.value()){
+            board.move(col,2,t2);
+            board.move(col,1,t1);
+            score+=board.tile(col,2).value();
+            return true;
+        }else if(t2.value()==t1.value()){
+            board.move(col,1,t1);
+            score+=board.tile(col,1).value();
+            return true;
+        }else{
+            return false;
+        }
     }
 
     /** Checks if the game is over and sets the gameOver variable
@@ -138,6 +286,13 @@ public class Model extends Observable {
      * */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
+        for(int row=0;row<b.size();row+=1){
+            for(int col=0;col<b.size();col+=1){
+                if(b.tile(col,row)==null){
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -148,6 +303,15 @@ public class Model extends Observable {
      */
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
+        for(int row=0;row<b.size();row+=1){
+            for(int col=0;col<b.size();col+=1){
+                if(b.tile(col,row)!=null){
+                    if(b.tile(col,row).value()==MAX_PIECE){
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 
@@ -157,9 +321,29 @@ public class Model extends Observable {
      * 1. There is at least one empty space on the board.
      * 2. There are two adjacent tiles with the same value.
      */
+    public static boolean atLeasttwosamenumberclosed(Board b) {
+        for (int row = 0; row < b.size(); row++) {
+            for (int col = 0; col < b.size(); col++) {
+                if (row - 1 >= 0 && b.tile(col, row).value() == b.tile(col, row - 1).value()) {
+                    return true;
+                } else if (row + 1 < b.size() && b.tile(col, row).value() == b.tile(col, row + 1).value()) {
+                    return true;
+                } else if (col - 1 >= 0 && b.tile(col, row).value() == b.tile(col - 1, row).value()) {
+                    return true;
+                } else if (col + 1 < b.size() && b.tile(col, row).value() == b.tile(col + 1, row).value()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
-        return false;
+        if(emptySpaceExists(b)){
+            return true;
+        }else {
+            return atLeasttwosamenumberclosed(b);
+        }
     }
 
 
