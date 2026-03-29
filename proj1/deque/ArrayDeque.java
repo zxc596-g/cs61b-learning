@@ -1,10 +1,11 @@
 package deque;
 
-import org.junit.Test;
-
+//import org.junit.Test;
+//import static org.junit.Assert.*;
 import java.util.Iterator;
 
-public class ArrayDeque<T> /*implements Iterable<T>*/{
+
+public class ArrayDeque<T> implements Deque<T>{
     private T[] items;
     private int size;
     private int length;
@@ -23,13 +24,13 @@ public class ArrayDeque<T> /*implements Iterable<T>*/{
         return size;
     }
 
-    public boolean isEmpty(){
-        if(size==0){
-            return true;
-        }else{
-            return false;
-        }
-    }
+//    public boolean isEmpty(){
+//        if(size==0){
+//            return true;
+//        }else{
+//            return false;
+//        }
+//    }
 
     public void resize(){
         int start=(nextFirst+1)%length;
@@ -115,29 +116,55 @@ public class ArrayDeque<T> /*implements Iterable<T>*/{
         return items[(nextFirst+1+index)%length];
     }
 
-//    private class ArrayIterator implements Iterator<T> {
-//        private int wizPos;
-//        public ArrayIterator(){
-//            wizPos=0;
-//        }
-//        @Override
-//        public boolean hasNext(){
-//            return wizPos<size;
-//        }
-//        @Override
-//        public T next(){
-//            T returnItem =get(wizPos);
-//            wizPos+=1;
-//            return returnItem;
-//        }
-//    }
-//    @Override
-//    public Iterator<T> iterator(){
-//        return new ArrayIterator();
-//    }
-//
+    private class ArrayIterator implements Iterator<T> {
+        private int wizPos;
+        public ArrayIterator(){
+            wizPos=0;
+        }
+        @Override
+        public boolean hasNext(){
+            return wizPos<size;
+        }
+        @Override
+        public T next(){
+            T returnItem =get(wizPos);
+            wizPos+=1;
+            return returnItem;
+        }
+    }
+    @Override
+    public Iterator<T> iterator(){
+        return new ArrayIterator();
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if(this == o)
+            return true;
+        if(o==null||!(o instanceof Deque))
+            return false;
+        Deque<?> other=(Deque<?>)o;
+        if(this.size()!= other.size())
+            return false;
+
+        Iterator<T> seer1=this.iterator();
+        Iterator<?> seer2= other.iterator();
+        while(seer1.hasNext()){
+            T item1=seer1.next();
+            Object item2=seer2.next();
+            if(item1==null||item2==null){
+                if(item1!=item2){
+                    return false;
+                }
+            }
+            else if(!item1.equals(item2))
+                return false;
+        }
+        return true;
+    }
+
 //    @Test
-//    public void test(){
+//    public void test1(){
 //        ArrayDeque<Integer> ad =new ArrayDeque<>();
 //        ad.addLast(4);
 //        ad.addLast(8);
@@ -146,6 +173,33 @@ public class ArrayDeque<T> /*implements Iterable<T>*/{
 //            System.out.println(x);
 //        }
 //    }
-
+//
+//    @Test
+//    public void test2(){
+//        ArrayDeque<Integer> ad1 =new ArrayDeque<>();
+//        ad1.addLast(4);
+//        ad1.addLast(8);
+//        ad1.addLast(6);
+//
+//        LinkedListDeque<Integer> ad2 =new LinkedListDeque<>();
+//        ad2.addLast(4);
+//        ad2.addLast(8);
+//        ad2.addLast(6);
+//
+//        boolean ans=ad1.equals(ad2);
+//        assertEquals(ad1,ad2);
+//        assertTrue(ans);
+//
+//        ans=ad1.equals(ad1);
+//        assertTrue(ans);
+//
+//        ad1.addLast(7);
+//        ans=ad2.equals(ad1);
+//        assertFalse(ans);
+//
+//        ArrayDeque<Integer> ad3 =new ArrayDeque<>();
+//        ans=ad1.equals(ad3);
+//        assertFalse(ans);
+//    }
 }
 

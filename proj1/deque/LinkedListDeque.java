@@ -1,10 +1,11 @@
 package deque;
 
 import org.junit.Test;
+import static org.junit.Assert.*;
 
 import java.util.Iterator;
 
-public class LinkedListDeque<T> implements Iterable<T>{
+public class LinkedListDeque<T> implements Deque<T>{
     public class Node{
         private T item;
         private Node pre;
@@ -43,13 +44,13 @@ public class LinkedListDeque<T> implements Iterable<T>{
         size+=1;
     }
 
-    public boolean isEmpty(){
-        if(size()==0){
-            return true;
-        }else{
-            return false;
-        }
-    }
+//    public boolean isEmpty(){
+//        if(size()==0){
+//            return true;
+//        }else{
+//            return false;
+//        }
+//    }
 
     public int size(){
         return size;
@@ -151,14 +152,47 @@ public class LinkedListDeque<T> implements Iterable<T>{
         return new LinkedListIterator();
     }
 
-    @Test
-    public void Iteratortest(){
-        LinkedListDeque<Integer> ld=new LinkedListDeque<>();
-        ld.addLast(2);
-        ld.addLast(8);
-        ld.addFirst(5);
-        for(int a:ld){
-            System.out.println(a);
+    @Override
+    public boolean equals(Object o){
+        if(this == o)
+            return true;
+        if(o==null||!(o instanceof Deque))
+            return false;
+        Deque<?> other=(Deque<?>)o;
+        if(this.size()!= other.size())
+            return false;
+
+        Iterator<T> seer1=this.iterator();
+        Iterator<?> seer2= other.iterator();
+        while(seer1.hasNext()){
+            T item1=seer1.next();
+            Object item2=seer2.next();
+            if(item1==null||item2==null){
+                if(item1!=item2){
+                    return false;
+                }
+            }
+            else if(!item1.equals(item2))
+                return false;
         }
+        return true;
     }
+
+    @Test
+    public void test(){
+        LinkedListDeque<Integer> ld1=new LinkedListDeque<>();
+        ld1.addLast(2);
+        ld1.addLast(8);
+        ld1.addFirst(5);
+        ld1.addLast(3);
+
+        LinkedListDeque<Integer> ld2=new LinkedListDeque<>();
+        ld2.addLast(2);
+        ld2.addLast(8);
+        ld2.addFirst(5);
+
+        boolean ans=ld1.equals(ld2);
+        assertFalse(ans);
+    }
+
 }
