@@ -114,87 +114,28 @@ public class Model extends Observable {
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
         board.setViewingPerspective(side);
-        for(int col=0;col<board.size();col++){
-            int colnumber=getcolnumber(col);
-            switch(colnumber){
-                case 0:{
-                    break;
-                }
-                case 1:{
-                    for(int row=0;row< board.size()-1;row++){
-                        if(tile(col,row)!=null){
-                            Tile t=tile(col,row);
-                            board.move(col,3,t);
-                            changed=true;
-                            break;
-                        }else{
-                            continue;
+        for(int col=0;col<board.size();col+=1) {
+            boolean[] ismerg = new boolean[board.size()];
+            for (int row = board.size() - 2; row >= 0; row -= 1) {
+                if(tile(col,row) != null){
+                    Tile t = tile(col, row);
+                    int targetrow = row + 1;
+                    while (targetrow < board.size()-1 && tile(col, targetrow) == null)
+                        targetrow += 1;
+                    if (tile(col, targetrow) == null) {
+                        board.move(col, targetrow, t);
+                        changed = true;
+                    } else if (tile(col, targetrow).value() == t.value()&&!ismerg[targetrow]) {
+                        changed = true;
+                        board.move(col, targetrow, t);
+                        ismerg[targetrow]=true;
+                        score += tile(col,targetrow).value();
+                    } else {
+                        if (targetrow - 1 != row) {
+                            board.move(col, targetrow - 1, t);
+                            changed = true;
                         }
                     }
-                    break;
-                }
-                case 2:{
-                    int []arr=new int[2];
-                    int dex=0;
-                    for(int row=0;row< board.size();row++) {
-                        if (tile(col, row) != null) {
-                            arr[dex++]=row;
-                        }
-                    }
-                    Tile t1=tile(col,arr[0]);
-                    Tile t2=tile(col,arr[1]);
-                    if(t1.value()==t2.value()){
-                        board.move(col,3,t2);
-                        board.move(col,3,t1);
-                        score+=tile(col,3).value();
-                        changed=true;
-                    }else{
-                        if(board.tile(col,3)==null){
-                            board.move(col,3,t2);
-                            board.move(col,2,t1);
-                            changed=true;
-                        }else{
-                            if(board.tile(col,2)==null){
-                                board.move(col,2,t1);
-                                changed=true;
-                            }
-                        }
-                    }
-                    break;
-                }
-                case 3:{
-                    int []arr=new int[3];
-                    int dex=0;
-                    for(int row=0;row< board.size();row++) {
-                        if (tile(col, row) != null) {
-                            arr[dex++]=row;
-                        }
-                    }
-                    Tile t1=tile(col,arr[0]);
-                    Tile t2=tile(col,arr[1]);
-                    Tile t3=tile(col,arr[2]);
-//t1 below t2,t2 below t3
-                    if(threenumber(col,t1,t2,t3)){
-                        changed=true;
-                    }
-                    break;
-                }
-                case 4:{
-                    int []arr=new int[4];
-                    int dex=0;
-                    for(int row=0;row< board.size();row++) {
-                        if (tile(col, row) != null) {
-                            arr[dex++]=row;
-                        }
-                    }
-                    Tile t1=tile(col,arr[0]);
-                    Tile t2=tile(col,arr[1]);
-                    Tile t3=tile(col,arr[2]);
-                    Tile t4=tile(col,arr[3]);
-                    if(fournumber(col,t1,t2,t3,t4)){
-                        changed=true;
-                    }
-                    break;
                 }
             }
         }
@@ -207,67 +148,168 @@ public class Model extends Observable {
         return changed;
     }
 
-    public int getcolnumber(int col) {
-        int number = 0;
-        for (int row = 0; row < board.size(); row++) {
-            if (tile(col, row) != null) {
-                number++;
-            }
-        }
-        return number;
-    }
+//    public boolean tilt(Side side) {
+//        boolean changed;
+//        System.out.println(">>> 接收到按键请求，方向为: " + side);
+//        changed = false;
+//        // TODO: Modify this.board (and perhaps this.score) to account
+//        // for the tilt to the Side SIDE. If the board changed, set the
+//        // changed local variable to true.
+//        board.setViewingPerspective(side);
+//        for(int col=0;col<board.size();col++){
+//            int colnumber=getcolnumber(col);
+//            switch(colnumber){
+//                case 0:{
+//                    break;
+//                }
+//                case 1:{
+//                    for(int row=0;row< board.size()-1;row++){
+//                        if(tile(col,row)!=null){
+//                            Tile t=tile(col,row);
+//                            board.move(col,3,t);
+//                            changed=true;
+//                            break;
+//                        }else{
+//                            continue;
+//                        }
+//                    }
+//                    break;
+//                }
+//                case 2:{
+//                    int []arr=new int[2];
+//                    int dex=0;
+//                    for(int row=0;row< board.size();row++) {
+//                        if (tile(col, row) != null) {
+//                            arr[dex++]=row;
+//                        }
+//                    }
+//                    Tile t1=tile(col,arr[0]);
+//                    Tile t2=tile(col,arr[1]);
+//                    if(t1.value()==t2.value()){
+//                        board.move(col,3,t2);
+//                        board.move(col,3,t1);
+//                        score+=tile(col,3).value();
+//                        changed=true;
+//                    }else{
+//                        if(board.tile(col,3)==null){
+//                            board.move(col,3,t2);
+//                            board.move(col,2,t1);
+//                            changed=true;
+//                        }else{
+//                            if(board.tile(col,2)==null){
+//                                board.move(col,2,t1);
+//                                changed=true;
+//                            }
+//                        }
+//                    }
+//                    break;
+//                }
+//                case 3:{
+//                    int []arr=new int[3];
+//                    int dex=0;
+//                    for(int row=0;row< board.size();row++) {
+//                        if (tile(col, row) != null) {
+//                            arr[dex++]=row;
+//                        }
+//                    }
+//                    Tile t1=tile(col,arr[0]);
+//                    Tile t2=tile(col,arr[1]);
+//                    Tile t3=tile(col,arr[2]);
+////t1 below t2,t2 below t3
+//                    if(threenumber(col,t1,t2,t3)){
+//                        changed=true;
+//                    }
+//                    break;
+//                }
+//                case 4:{
+//                    int []arr=new int[4];
+//                    int dex=0;
+//                    for(int row=0;row< board.size();row++) {
+//                        if (tile(col, row) != null) {
+//                            arr[dex++]=row;
+//                        }
+//                    }
+//                    Tile t1=tile(col,arr[0]);
+//                    Tile t2=tile(col,arr[1]);
+//                    Tile t3=tile(col,arr[2]);
+//                    Tile t4=tile(col,arr[3]);
+//                    if(fournumber(col,t1,t2,t3,t4)){
+//                        changed=true;
+//                    }
+//                    break;
+//                }
+//            }
+//        }
+//        board.setViewingPerspective(Side.NORTH);
+//        checkGameOver();
+//        if (changed) {
+//            setChanged();
+//            notifyObservers();
+//        }
+//        return changed;
+//    }
 
-    public boolean threenumber(int col,Tile t1,Tile t2,Tile t3){
-         if(t2.value()==t3.value()){
-            board.move(col,3,t3);
-            board.move(col,3,t2);
-            board.move(col,2,t1);
-            score+=board.tile(col,3).value();
-            return true;
-        }else if(t1.value()==t2.value()){
-            board.move(col,3,t3);
-            board.move(col,2,t2);
-            board.move(col,2,t1);
-             score+=board.tile(col,2).value();
-             return true;
-        }else{
-             if(board.tile(col,0)==null){
-                 return false;
-             }else{
-                 board.move(col,3,t3);
-                 board.move(col,2,t2);
-                 board.move(col,1,t1);
-                 return true;
-             }
-         }
-    }
+//    public int getcolnumber(int col) {
+//        int number = 0;
+//        for (int row = 0; row < board.size(); row++) {
+//            if (tile(col, row) != null) {
+//                number++;
+//            }
+//        }
+//        return number;
+//    }
 
-    public boolean fournumber(int col,Tile t1,Tile t2,Tile t3,Tile t4){
-        if(t4.value()==t3.value()&&t2.value()==t1.value()){
-            board.move(col,3,t3);
-            board.move(col,2,t2);
-            board.move(col,2,t1);
-            score+=(board.tile(col,3).value()+board.tile(col,2).value());
-            return true;
-        } else if(t4.value()==t3.value()){
-            board.move(col,3,t3);
-            board.move(col,2,t2);
-            board.move(col,1,t1);
-            score+=board.tile(col,3).value();
-            return true;
-        }else if(t3.value()==t2.value()){
-            board.move(col,2,t2);
-            board.move(col,1,t1);
-            score+=board.tile(col,2).value();
-            return true;
-        }else if(t2.value()==t1.value()){
-            board.move(col,1,t1);
-            score+=board.tile(col,1).value();
-            return true;
-        }else{
-            return false;
-        }
-    }
+//    public boolean threenumber(int col,Tile t1,Tile t2,Tile t3){
+//         if(t2.value()==t3.value()){
+//            board.move(col,3,t3);
+//            board.move(col,3,t2);
+//            board.move(col,2,t1);
+//            score+=board.tile(col,3).value();
+//            return true;
+//        }else if(t1.value()==t2.value()){
+//            board.move(col,3,t3);
+//            board.move(col,2,t2);
+//            board.move(col,2,t1);
+//             score+=board.tile(col,2).value();
+//             return true;
+//        }else{
+//             if(board.tile(col,0)==null){
+//                 return false;
+//             }else{
+//                 board.move(col,3,t3);
+//                 board.move(col,2,t2);
+//                 board.move(col,1,t1);
+//                 return true;
+//             }
+//         }
+//    }
+
+//    public boolean fournumber(int col,Tile t1,Tile t2,Tile t3,Tile t4){
+//        if(t4.value()==t3.value()&&t2.value()==t1.value()){
+//            board.move(col,3,t3);
+//            board.move(col,2,t2);
+//            board.move(col,2,t1);
+//            score+=(board.tile(col,3).value()+board.tile(col,2).value());
+//            return true;
+//        } else if(t4.value()==t3.value()){
+//            board.move(col,3,t3);
+//            board.move(col,2,t2);
+//            board.move(col,1,t1);
+//            score+=board.tile(col,3).value();
+//            return true;
+//        }else if(t3.value()==t2.value()){
+//            board.move(col,2,t2);
+//            board.move(col,1,t1);
+//            score+=board.tile(col,2).value();
+//            return true;
+//        }else if(t2.value()==t1.value()){
+//            board.move(col,1,t1);
+//            score+=board.tile(col,1).value();
+//            return true;
+//        }else{
+//            return false;
+//        }
+//    }
 
     /** Checks if the game is over and sets the gameOver variable
      *  appropriately.
