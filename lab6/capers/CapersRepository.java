@@ -34,11 +34,11 @@ public class CapersRepository {
         // TODO
         File f = Utils.join(CAPERS_FOLDER);
         if(!f.exists()){
-            f.mkdir();
+            f.mkdirs();
         }
         f = Utils.join(Dog.DOG_FOLDER);
         if(!f.exists()){
-            f.mkdir();
+            f.mkdirs();
         }
     }
 
@@ -49,6 +49,14 @@ public class CapersRepository {
      */
     public static void writeStory(String text) {
         // TODO
+        String oldstory = "";
+        File sf = join(CAPERS_FOLDER,"story");
+        if(sf.exists()){
+            oldstory = readContentsAsString(sf);
+        }
+        String totalstory = oldstory + text + "\n";
+        writeContents(sf,totalstory);
+        System.out.print(totalstory);
     }
 
     /**
@@ -58,6 +66,9 @@ public class CapersRepository {
      */
     public static void makeDog(String name, String breed, int age) {
         // TODO
+        Dog d = new Dog(name, breed, age);
+        d.saveDog();
+        System.out.println(d);
     }
 
     /**
@@ -68,5 +79,10 @@ public class CapersRepository {
      */
     public static void celebrateBirthday(String name) {
         // TODO
+        Dog d = Dog.fromFile(name);
+        if(d != null){
+            d.haveBirthday();
+            d.saveDog();
+        }
     }
 }
