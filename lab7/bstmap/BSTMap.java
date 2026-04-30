@@ -8,20 +8,22 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         private K key;
         private V val;
         private Node left, right;
+        private int size = 0;
 
         public Node(K k, V v) {
             key = k;
             val = v;
+            this.size = 1;
         }
     }
     private Node root;
-    private int size = 0;
+
 
     public BSTMap() { }
 
     @Override
     public void clear() {
-
+        root = null;
     }
 
     @Override
@@ -29,7 +31,20 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         if (key == null) {
             throw new IllegalArgumentException("argument to containsKey() is null");
         }
-        return get(key) != null;
+        return getNodebyKey(root, key) != null;
+    }
+    private Node getNodebyKey(Node n,K key) {
+        if (n == null) {
+            return null;
+        }
+        int cmp = n.key.compareTo(key);
+        if (cmp == 0) {
+            return n;
+        } else if (cmp < 0) {
+            return getNodebyKey(n.right,key);
+        } else {
+            return getNodebyKey(n.left,key);
+        }
     }
 
     @Override
@@ -56,46 +71,58 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
 
     @Override
     public int size() {
-        return size;
+        return size(root);
+    }
+
+    public int size(Node n){
+        if (n == null){
+            return 0;
+        } else {
+            return n.size;
+        }
     }
 
     @Override
     public void put(K key, V value) {
-        if (key == null || value == null) {
-            throw new IllegalArgumentException("calls put() with a null key or null value");
+        if (key == null) {
+            throw new IllegalArgumentException("calls put() with a null key");
         }
-        /*if (containsKey(key)) {
+        /*if (containsKey(key))
             throw new IllegalArgumentException("key is already exist");
             put(root,key,value);
         }*/
         root = put(root, key, value);
     }
 
-    private Node put(Node root, K key, V value) {
-        if (root == null) {
+    private Node put(Node n, K key, V value) {
+        if (n == null) {
             return new Node(key, value);
         }
-        int cmp = root.key.compareTo(key);
+        int cmp = n.key.compareTo(key);
         if (cmp > 0) {
-            root.left = put(root.left, key, value);
+            n.left = put(n.left, key, value);
         } else if (cmp < 0) {
-            root.right = put(root.right, key, value);
+            n.right = put(n.right, key, value);
         } else {
-            root.val = value;
+            n.val = value;
         }
-        return root;
+        n.size = 1 + size(n.left) + size(n.right);
+        return n;
     }
 
     @Override
     public Set<K> keySet() {
+        throw new IllegalArgumentException("Not required for lab7");
     }
 
     @Override
     public V remove(K key) {
+        throw new IllegalArgumentException("Not required for lab7");
     }
 
     @Override
     public V remove(K key, V value) {
+        throw new IllegalArgumentException("Not required for lab7");
 
     }
 
