@@ -47,5 +47,16 @@ public class Commit implements Serializable {
         this.timestamp = new Date(0);
         this.sha1 = getcommitsha1();
     }
+
+    public String getMessage() {
+        return this.message;
+    }
+    public String gettime() {
+        return this.timestamp.toString();
+    }
+    public String getsha1() {
+        return this.sha1;
+    }
+
 }
 
