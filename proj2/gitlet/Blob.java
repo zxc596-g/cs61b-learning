@@ -19,4 +19,12 @@ public class Blob implements Serializable {
         content = Utils.readContents(file);
         sha1 = Utils.sha1(this.content);
     }
+
+    public String getSha1() {
+        return sha1;
+    }
+
+    public byte[] getContent() {
+        return content;
+    }
 }
