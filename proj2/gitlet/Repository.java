@@ -332,7 +332,7 @@ public class Repository implements Serializable {
             System.out.println("A branch with that name does not exist.");
             System.exit(0);
         }
-        Utils.restrictedDelete(targetBranch);
+        targetBranch.delete();
     }
     public static void rm_branch(String[] args) {
         isInit();
@@ -492,14 +492,16 @@ public class Repository implements Serializable {
         for (String fileNameInCWD : Utils.plainFilenamesIn(CWD)) {
             if (isUntracked(addition, removal, currentTrackedFile, fileNameInCWD)) {
                 if(targetTrackedFiles.contains(fileNameInCWD)) {
-                    System.out.println("There is an untracked file in the way; delete it, or add it first.");
+                    System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
                     System.exit(0);
                 }
             }
         }
         for (String currentTrackedFileName : currentTrackedFile) {
             if (!targetTrackedFiles.contains(currentTrackedFileName)) {
-                Utils.restrictedDelete(currentTrackedFileName);
+                //Utils.restrictedDelete(currentTrackedFileName);
+                File file = join(CWD, currentTrackedFileName);
+                file.delete();
             }
         }
         String targetCommitSha1 = targetCommit.getSha1();
@@ -652,7 +654,7 @@ public class Repository implements Serializable {
         return targetSha1;
     }
 
-    private static boolean ismerged(String head, String given, String split, String fileName) {
+    private static boolean ismerged(String head, String given, String split) {
         if (!split.equals("-1")) {
             if (head.equals(given)) return false;
             if (given.equals(split)) return false;
@@ -717,7 +719,8 @@ public class Repository implements Serializable {
             }
 
             if (isUntracked(Collections.emptySet(), Collections.emptySet(), headTrackedFiles.keySet(), fileName)
-                    && ismerged(condition_Head, condition_Branch, condition_Spilt, fileName)) {
+                    && ismerged(condition_Head, condition_Branch, condition_Spilt)
+                    && join(CWD, fileName).exists()) {
                 System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
                 System.exit(0);
             }
@@ -774,14 +777,16 @@ public class Repository implements Serializable {
         }
 
         for (String fileName : stage.getRemoval()) {
-            Utils.restrictedDelete(join(CWD, fileName));
+        //    Utils.restrictedDelete(join(CWD, fileName));
+            File file = join(CWD, fileName);
+            file.delete();
         }
 
         if (hasConflict == true) {
             System.out.println("Encountered a merge conflict.");
         }
 
-        String message = "Merged " + branchName + " into " + getHeadname() + " .";
+        String message = "Merged " + branchName + " into " + getHeadname() + ".";
         Commit targetCommit = new Commit(message, headSha1, branchSha1, targetTrackedFiles);
         updatePointer(getHeadname(), targetCommit.getSha1());
         Utils.writeObject(join(obj1, targetCommit.getSha1()), targetCommit);
