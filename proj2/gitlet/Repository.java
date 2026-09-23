@@ -25,21 +25,19 @@ public class Repository implements Serializable {
 
     public static final File MASTER = join(REFS, "heads", "master");
 
-    public static final File heads = join(REFS, "heads");
+    public static final File HEADS = join(REFS, "heads");
 
-    public static final File obj1 = join(OBJ, "object1");
+    public static final File OBJ1 = join(OBJ, "object1");
 
-    public static final File obj2 = join(OBJ, "object2");
+    public static final File OBJ2 = join(OBJ, "object2");
 
-//    File remotes = join(REFS, "remotes");
+    public static final File MAP = join(STAGE, "Map");
 
-    public static final File Map = join(STAGE, "Map");
-
-    private Repository(){}
+    private Repository() { }
 
     public static String createMergelog(Commit targetCommit) {
-        String firstSha1 = targetCommit.getParent_1().substring(0, 7);
-        String secondSha1 = targetCommit.getParent_2().substring(0, 7);
+        String firstSha1 = targetCommit.getParent1().substring(0, 7);
+        String secondSha1 = targetCommit.getParent2().substring(0, 7);
 
         String current = "===\n" + "commit " + targetCommit.getSha1() + "\n"
                 + "Merge: " + firstSha1 + " " + secondSha1 + "\n"
@@ -50,7 +48,7 @@ public class Repository implements Serializable {
 
     public static String createlog(String targetSha1) {
         Commit targetCommit = Commit.getCommit(targetSha1);
-        if (targetCommit.getParent_2() != null) {
+        if (targetCommit.getParent2() != null) {
             return createMergelog(targetCommit);
         } else {
             String current = "===\n" + "commit " + targetCommit.getSha1() + "\n"
@@ -60,18 +58,18 @@ public class Repository implements Serializable {
         }
     }
 
-    private static boolean PointerIsExist(String name) {
+    private static boolean pointerIsExist(String name) {
         File current = join(REFS, "heads", name);
         return current.exists();
     }
 
-    public static void updatePointer(String name, String commit_sha1) {
-        if(!PointerIsExist(name)) {
+    public static void updatePointer(String name, String commitSha1) {
+        if (!pointerIsExist(name)) {
             System.out.println("pointer is not exist!");
             return;
         }
         File current = join(REFS, "heads", name);
-        Utils.writeContents(current, commit_sha1);
+        Utils.writeContents(current, commitSha1);
     }
 
     public static String getHeadSha1() {
@@ -86,26 +84,26 @@ public class Repository implements Serializable {
         return current.getName();
     }
 
-    private static void m_init() {
-        if(GITLET_DIR.exists()) {
+    private static void mInit() {
+        if (GITLET_DIR.exists()) {
             System.out.println("A Gitlet version-control system already exists in the current directory.");
             System.exit(0);
         }
-        if(!CWD.exists()) {
+        if (!CWD.exists()) {
             CWD.mkdir();
         }
         GITLET_DIR.mkdir();
         OBJ.mkdir();
         REFS.mkdir();
-        heads.mkdir();
-        Map.mkdir();
-        obj1.mkdir();
-        obj2.mkdir();
+        HEADS.mkdir();
+        MAP.mkdir();
+        OBJ1.mkdir();
+        OBJ2.mkdir();
 
         Commit initcommit = new Commit();
         Utils.writeContents(MASTER, initcommit.getSha1());
         Utils.writeContents(HEAD, "refs/heads/master");
-        Utils.writeObject(join(obj1, initcommit.getSha1()), initcommit);
+        Utils.writeObject(join(OBJ1, initcommit.getSha1()), initcommit);
     }
 
     public static void init(String[] args) {
@@ -113,7 +111,7 @@ public class Repository implements Serializable {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
-        m_init();
+        mInit();
     }
 
     //        暂存一个已经暂存的文件会使用新内容覆盖暂存区中的旧条目。暂存区应该位于 .gitlet 的某个位置。
@@ -121,7 +119,7 @@ public class Repository implements Serializable {
     //        如果当前工作版本的文件与当前提交中的版本相同，则不要暂存它以进行添加，
 
     //        如果它已经在暂存区中，则将其移除（这通常发生在文件被修改、添加，然后改回其原始版本时）。
-    private static void m_add(String filename) {
+    private static void mAdd(String filename) {
         File current = Utils.join(CWD, filename);
         if (!current.exists()) {
             System.out.println("File does not exist.");
@@ -132,7 +130,7 @@ public class Repository implements Serializable {
         String sha1 = blob.getSha1();
         String commitSha1 = getHeadSha1();
         Commit commit = Commit.getCommit(commitSha1);
-        Map <String, String> trackedFiles = commit.getTrackedFiles();
+        Map<String, String> trackedFiles = commit.getTrackedFiles();
         if (trackedFiles.containsKey(filename)) {
             if (trackedFiles.get(filename).equals(sha1)) {
                 stage.getAddition().remove(filename);
@@ -142,26 +140,26 @@ public class Repository implements Serializable {
             }
         }
         stage.add(filename, sha1);
-        Utils.writeContents(Utils.join(obj2, sha1), blob.getContent());
+        Utils.writeContents(Utils.join(OBJ2, sha1), blob.getContent());
         stage.save();
     }
 
     public static void add(String[] args) {
         isInit();
         if (args.length == 2) {
-            m_add(args[1]);
+            mAdd(args[1]);
         } else {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
     }
 
-    private static boolean m_rm(String filename) {
-        File current = join(CWD,filename);
+    private static boolean mRm(String filename) {
+        File current = join(CWD, filename);
         String commitSha1 = getHeadSha1();
         Commit commit = Commit.getCommit(commitSha1);
         Stage stage = Stage.load();
-        Map <String, String> trackedFiles = commit.getTrackedFiles();
+        Map<String, String> trackedFiles = commit.getTrackedFiles();
         if (trackedFiles.containsKey(filename)) {
             stage.getAddition().remove(filename);
             stage.getRemoval().add(filename);
@@ -181,19 +179,19 @@ public class Repository implements Serializable {
     public static void rm(String[] args) {
         isInit();
         if (args.length == 2) {
-            Repository.m_rm(args[1]);
+            Repository.mRm(args[1]);
         } else {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
     }
 
-    private static void m_commit(String message) {
+    private static void mCommit(String message) {
         Stage stage = Stage.load();
         String headSha1 = getHeadSha1();
         Commit oldcommit = Commit.getCommit(headSha1);
-        Map <String, String> lastestMap = oldcommit.getTrackedFiles();
-        Map <String, String> map = new HashMap<>(lastestMap);
+        Map<String, String> lastestMap = oldcommit.getTrackedFiles();
+        Map<String, String> map = new HashMap<>(lastestMap);
         Set<String> removal = stage.getRemoval();
         Map<String, String> addition = stage.getAddition();
         if (removal.isEmpty() && addition.isEmpty()) {
@@ -208,14 +206,14 @@ public class Repository implements Serializable {
             }
         }
         if (!addition.isEmpty()) {
-            for(String c : addition.keySet()) {
+            for (String c : addition.keySet()) {
                 map.put(c, addition.get(c));
             }
         }
         stage.clear();
-        Commit newcommit = new Commit(message, headSha1 , map);
+        Commit newcommit = new Commit(message, headSha1, map);
         updatePointer(getHeadname(), newcommit.getSha1());
-        Utils.writeObject(join(obj1, newcommit.getSha1()), newcommit);
+        Utils.writeObject(join(OBJ1, newcommit.getSha1()), newcommit);
     }
 
     public static void commit(String[] args) {
@@ -228,15 +226,15 @@ public class Repository implements Serializable {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
-        Repository.m_commit(args[1]);
+        Repository.mCommit(args[1]);
     }
 
-    private static void m_log() {
+    private static void mLog() {
         String headSha1 = getHeadSha1();
         Commit commit = Commit.getCommit(headSha1);
         System.out.println(createlog(headSha1));
-        while(commit.getParent_1() != null && !commit.getParent_1().trim().isEmpty()) {
-            commit = Commit.getCommit(commit.getParent_1());
+        while (commit.getParent1() != null && !commit.getParent1().trim().isEmpty()) {
+            commit = Commit.getCommit(commit.getParent1());
             System.out.println(createlog(commit.getSha1()));
         }
     }
@@ -247,12 +245,12 @@ public class Repository implements Serializable {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
-        m_log();
+        mLog();
     }
 
-    private static void m_globallog() {
+    private static void mGloballog() {
         //init commit exists so obj1 is not null
-        for(String s : Utils.plainFilenamesIn(obj1)) {
+        for (String s : Utils.plainFilenamesIn(OBJ1)) {
             if (s.trim().length() == 40) {
                 System.out.println(createlog(s));
             }
@@ -265,7 +263,7 @@ public class Repository implements Serializable {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
-        m_globallog();
+        mGloballog();
     }
 
     public static void isInit() {
@@ -275,10 +273,10 @@ public class Repository implements Serializable {
         }
     }
 
-    private static void m_find(String message) {
+    private static void mFind(String message) {
         //Whether message is null will be determined in the find function
         boolean isfound = false;
-        for (String s : Utils.plainFilenamesIn(obj1)) {
+        for (String s : Utils.plainFilenamesIn(OBJ1)) {
             if (s.trim().length() == 40) {
                 Commit commit = Commit.getCommit(s);
                 if (commit.getMessage().equals(message)) {
@@ -287,7 +285,7 @@ public class Repository implements Serializable {
                 }
             }
         }
-        if (isfound == false) {
+        if (!isfound) {
             System.out.println("Found no commit with that message.");
             System.exit(0);
         }
@@ -299,11 +297,11 @@ public class Repository implements Serializable {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
-        m_find(args[1]);
+        mFind(args[1]);
     }
 
-    private static void m_branch(String name) {
-        File current = Utils.join(heads, name);
+    private static void mBranch(String name) {
+        File current = Utils.join(HEADS, name);
         if (current.exists()) {
             System.out.println("A branch with that name already exists.");
             System.exit(0);
@@ -318,29 +316,29 @@ public class Repository implements Serializable {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
-        m_branch(args[1]);
+        mBranch(args[1]);
     }
 
-    private static void m_rm_branch(String name) {
+    private static void mRmBranch(String name) {
         String currentBranchName = getHeadname();
         if (currentBranchName.equals(name)) {
             System.out.println("Cannot remove the current branch.");
             System.exit(0);
         }
-        File targetBranch = Utils.join(heads, name);
+        File targetBranch = Utils.join(HEADS, name);
         if (!targetBranch.exists()) {
             System.out.println("A branch with that name does not exist.");
             System.exit(0);
         }
         targetBranch.delete();
     }
-    public static void rm_branch(String[] args) {
+    public static void rmBranch(String[] args) {
         isInit();
         if (args.length != 2) {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
-        m_rm_branch(args[1]);
+        mRmBranch(args[1]);
     }
 
     private static boolean isUntracked(String fileName) {
@@ -352,7 +350,8 @@ public class Repository implements Serializable {
         return isUntracked(addition, removal, tracked, fileName);
     }
 
-    private static boolean isUntracked(Set<String> addition, Set<String> removal, Set<String> tracked, String fileName) {
+    private static boolean isUntracked(Set<String> addition, Set<String> removal,
+                                       Set<String> tracked, String fileName) {
         if (!addition.contains(fileName)) {
             if (!tracked.contains(fileName)) {
                 return true;
@@ -365,9 +364,9 @@ public class Repository implements Serializable {
         return false;
     }
 
-    private static void m_status() {
+    private static void mStatus() {
         System.out.println("=== Branches ===");
-        List<String> branches = Utils.plainFilenamesIn(heads);
+        List<String> branches = Utils.plainFilenamesIn(HEADS);
         branches.sort(null);
         String currentBranch = getHeadname();
         for (String c : branches) {
@@ -392,7 +391,7 @@ public class Repository implements Serializable {
 
         System.out.println("=== Removed Files ===");
         Set<String> removal = stage.getRemoval();
-        List<String>removedFile = new ArrayList<>(removal);
+        List<String> removedFile = new ArrayList<>(removal);
         removedFile.sort(null);
         for (String c : removedFile) {
             System.out.println(c);
@@ -406,13 +405,13 @@ public class Repository implements Serializable {
         Set<String> additionSet = addition.keySet();
         Set<String> untracked = Commit.getHeadCommit().getTrackedFiles().keySet();
         List<String> untrackedFileList = new ArrayList<>();
-        for(String c : Utils.plainFilenamesIn(CWD)) {
+        for (String c : Utils.plainFilenamesIn(CWD)) {
             if (isUntracked(additionSet, removal, untracked, c)) {
                 untrackedFileList.add(c);
             }
         }
         untrackedFileList.sort(null);
-        for(String untrackedFileName : untrackedFileList) {
+        for (String untrackedFileName : untrackedFileList) {
             System.out.println(untrackedFileName);
         }
         System.out.println();
@@ -424,12 +423,12 @@ public class Repository implements Serializable {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
-        m_status();
+        mStatus();
     }
 
     private static List<String> getSha1List() {
         List<String> sha1List = new ArrayList<>();
-        for (String c : Utils.plainFilenamesIn(obj1)) {
+        for (String c : Utils.plainFilenamesIn(OBJ1)) {
             sha1List.add(c);
         }
         return sha1List;
@@ -443,9 +442,9 @@ public class Repository implements Serializable {
         List<String> sha1List = getSha1List();
         String matchedSha1 = "";
         int matchCount = 0;
-        for(String sha1_of_sha1List : sha1List) {
-            if (sha1_of_sha1List.startsWith(preSha)) {
-                matchedSha1 = sha1_of_sha1List;
+        for (String sha1OfSha1List : sha1List) {
+            if (sha1OfSha1List.startsWith(preSha)) {
+                matchedSha1 = sha1OfSha1List;
                 matchCount = matchCount + 1;
             }
         }
@@ -460,7 +459,7 @@ public class Repository implements Serializable {
         return Commit.getCommit(matchedSha1);
     }
 
-    private static void m_checkout(String commitSha1, String fileName) {
+    private static void mCheckout(String commitSha1, String fileName) {
         Commit targetCommit = searchSha1(commitSha1);
         Map<String, String> targetMap = targetCommit.getTrackedFiles();
         if (!targetMap.containsKey(fileName)) {
@@ -468,7 +467,7 @@ public class Repository implements Serializable {
             System.exit(0);
         }
         String blobSha1 = targetMap.get(fileName);
-        File blobFile = Utils.join(obj2, blobSha1);
+        File blobFile = Utils.join(OBJ2, blobSha1);
         byte[] content = Utils.readContents(blobFile);
         File headFile = Utils.join(fileName);
         Utils.writeContents(headFile, content);
@@ -478,11 +477,11 @@ public class Repository implements Serializable {
         stage.save();
     }
 
-    private static void m_checkout(String fileName) {
-        m_checkout(getHeadSha1(), fileName);
+    private static void mCheckout(String fileName) {
+        mCheckout(getHeadSha1(), fileName);
     }
 
-    private static Commit m_checkoutfully(String commitSha1) {
+    private static Commit mCheckoutfully(String commitSha1) {
         Stage stage = Stage.load();
         Set<String> addition = stage.getAddition().keySet();
         Set<String> removal = stage.getRemoval();
@@ -491,7 +490,7 @@ public class Repository implements Serializable {
         Set<String> targetTrackedFiles = targetCommit.getTrackedFiles().keySet();
         for (String fileNameInCWD : Utils.plainFilenamesIn(CWD)) {
             if (isUntracked(addition, removal, currentTrackedFile, fileNameInCWD)) {
-                if(targetTrackedFiles.contains(fileNameInCWD)) {
+                if (targetTrackedFiles.contains(fileNameInCWD)) {
                     System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
                     System.exit(0);
                 }
@@ -506,22 +505,22 @@ public class Repository implements Serializable {
         }
         String targetCommitSha1 = targetCommit.getSha1();
         for (String fileNameInTrackedFile : targetTrackedFiles) {
-            m_checkout(targetCommitSha1, fileNameInTrackedFile);
+            mCheckout(targetCommitSha1, fileNameInTrackedFile);
         }
         stage.clear();
         return targetCommit;
     }
 
     private static void updateHEAD(String branchName) {
-        if (!Utils.join(heads, branchName).exists()) {
+        if (!Utils.join(HEADS, branchName).exists()) {
             System.out.println("No such branch exists.");
             System.exit(0);
         }
         Utils.writeContents(HEAD, "refs/heads/" + branchName);
     }
 
-    private static void m_checkoutBranch(String branchName) {
-        if (!Utils.join(heads, branchName).exists()) {
+    private static void mCheckoutBranch(String branchName) {
+        if (!Utils.join(HEADS, branchName).exists()) {
             System.out.println("No such branch exists.");
             System.exit(0);
         }
@@ -529,13 +528,13 @@ public class Repository implements Serializable {
             System.out.println("No need to checkout the current branch.");
             System.exit(0);
         }
-        String branchSha1 = Utils.readContentsAsString(Utils.join(heads, branchName));
-        m_checkoutfully(branchSha1);
+        String branchSha1 = Utils.readContentsAsString(Utils.join(HEADS, branchName));
+        mCheckoutfully(branchSha1);
         updateHEAD(branchName);
     }
 
-    private static void m_reset(String preSha1) {
-        Commit targetCommit = m_checkoutfully(preSha1);
+    private static void mReset(String preSha1) {
+        Commit targetCommit = mCheckoutfully(preSha1);
         updatePointer(getHeadname(), targetCommit.getSha1());
     }
 
@@ -545,24 +544,24 @@ public class Repository implements Serializable {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
-        m_reset(args[1]);
+        mReset(args[1]);
     }
     public static void checkout(String[] args) {
         isInit();
         if (args.length == 2) {
-            m_checkoutBranch(args[1]);
+            mCheckoutBranch(args[1]);
         } else if (args.length == 3) {
             if (!args[1].equals("--")) {
                 System.out.println("Incorrect operands.");
                 System.exit(0);
             }
-            m_checkout(args[2]);
-        } else if (args.length == 4){
+            mCheckout(args[2]);
+        } else if (args.length == 4) {
             if (!args[2].equals("--")) {
                 System.out.println("Incorrect operands.");
                 System.exit(0);
             }
-            m_checkout(args[1], args[3]);
+            mCheckout(args[1], args[3]);
         } else {
             System.out.println("Incorrect operands.");
             System.exit(0);
@@ -570,7 +569,7 @@ public class Repository implements Serializable {
     }
 
     private static String searchSplit(String branchName) {
-        File branch = Utils.join(heads, branchName);
+        File branch = Utils.join(HEADS, branchName);
         if (!branch.exists()) {
             System.out.println("A branch with that name does not exist.");
             System.exit(0);
@@ -589,13 +588,13 @@ public class Repository implements Serializable {
             Commit currCommit = Commit.getCommit(currSha1);
             int currdistance = distanceMap.get(currSha1);
 
-            String parent1Sha1 = currCommit.getParent_1();
+            String parent1Sha1 = currCommit.getParent1();
             if (parent1Sha1 != null && !distanceMap.containsKey(parent1Sha1)) {
                 distanceMap.put(parent1Sha1, currdistance + 1);
                 que.add(parent1Sha1);
             }
 
-            String parent2Sha1 = currCommit.getParent_2();
+            String parent2Sha1 = currCommit.getParent2();
             if (parent2Sha1 != null && !distanceMap.containsKey(parent2Sha1)) {
                 distanceMap.put(parent2Sha1, currdistance + 1);
                 que.add(parent2Sha1);
@@ -618,13 +617,13 @@ public class Repository implements Serializable {
                 continue;
             }
 
-            String parent1Sha1 = branchCommit.getParent_1();
+            String parent1Sha1 = branchCommit.getParent1();
             if (parent1Sha1 != null && !visited.contains(parent1Sha1)) {
                 que.add(parent1Sha1);
                 visited.add(parent1Sha1);
             }
 
-            String parent2Sha1 = branchCommit.getParent_2();
+            String parent2Sha1 = branchCommit.getParent2();
             if (parent2Sha1 != null && !visited.contains(parent2Sha1)) {
                 que.add(parent2Sha1);
                 visited.add(parent2Sha1);
@@ -633,14 +632,14 @@ public class Repository implements Serializable {
         return targetSha1;
     }
 
-    private static String jointFiles(String condition_Head, String condition_Branch) {
+    private static String jointFiles(String conditionHead, String conditionBranch) {
         byte[] headContent = null;
         byte[] branchContent = null;
-        if (!condition_Head.equals("-1")) {
-            headContent = Utils.readContents(Utils.join(obj2, condition_Head));
+        if (!conditionHead.equals("-1")) {
+            headContent = Utils.readContents(Utils.join(OBJ2, conditionHead));
         }
-        if (!condition_Branch.equals("-1")) {
-            branchContent = Utils.readContents(Utils.join(obj2, condition_Branch));
+        if (!conditionBranch.equals("-1")) {
+            branchContent = Utils.readContents(Utils.join(OBJ2, conditionBranch));
         }
         String headText = (headContent != null) ? new String(headContent, StandardCharsets.UTF_8) : "";
         String branchText = (branchContent != null) ? new String(branchContent, StandardCharsets.UTF_8) : "";
@@ -650,23 +649,29 @@ public class Repository implements Serializable {
                 + branchText + ">>>>>>>\n";
         byte[] targetText = targetContent.getBytes();
         String targetSha1 = sha1(targetText);
-        Utils.writeContents(Utils.join(obj2, targetSha1), targetText);
+        Utils.writeContents(Utils.join(OBJ2, targetSha1), targetText);
         return targetSha1;
     }
 
     private static boolean ismerged(String head, String given, String split) {
         if (!split.equals("-1")) {
-            if (head.equals(given)) return false;
-            if (given.equals(split)) return false;
+            if (head.equals(given)) {
+                return false;
+            }
+            if (given.equals(split)) {
+                return false;
+            }
         } else {
-            if (given.equals("-1") && !head.equals("-1")) return false;
+            if (given.equals("-1") && !head.equals("-1")) {
+                return false;
+            }
         }
         return true;
     }
 
-    private static void m_merge(String branchName) {
+    private static void mMerge(String branchName) {
         String headName = getHeadname();
-        if (!Utils.join(heads, branchName).exists()) {
+        if (!Utils.join(HEADS, branchName).exists()) {
             System.out.println("A branch with that name does not exist.");
             System.exit(0);
         }
@@ -682,9 +687,9 @@ public class Repository implements Serializable {
         String splitPointSha1 = searchSplit(branchName);
         //如果分割点是当前分支，那么效果是检出给定分支，操作在打印“当前分支快速前进”的消息后结束。
         String headSha1 = getHeadSha1();
-        String branchSha1 = Utils.readContentsAsString(Utils.join(heads, branchName));
+        String branchSha1 = Utils.readContentsAsString(Utils.join(HEADS, branchName));
         if (splitPointSha1.equals(headSha1)) {
-            m_checkoutBranch(branchName);
+            mCheckoutBranch(branchName);
             System.out.println("Current branch fast-forwarded.");
             System.exit(0);
         }
@@ -705,21 +710,21 @@ public class Repository implements Serializable {
         allFiles.addAll(splitTrackedFiles.keySet());
 
         for (String fileName : allFiles) {
-            String condition_Head = "-1";
-            String condition_Branch = "-1";
-            String condition_Spilt = "-1";
+            String conditionHead = "-1";
+            String conditionBranch = "-1";
+            String conditionSpilt = "-1";
             if (headTrackedFiles.containsKey(fileName)) {
-                condition_Head = headTrackedFiles.get(fileName);
+                conditionHead = headTrackedFiles.get(fileName);
             }
             if (branchTrackedFiles.containsKey(fileName)) {
-                condition_Branch = branchTrackedFiles.get(fileName);
+                conditionBranch = branchTrackedFiles.get(fileName);
             }
             if (splitTrackedFiles.containsKey(fileName)) {
-                condition_Spilt = splitTrackedFiles.get(fileName);
+                conditionSpilt = splitTrackedFiles.get(fileName);
             }
 
             if (isUntracked(Collections.emptySet(), Collections.emptySet(), headTrackedFiles.keySet(), fileName)
-                    && ismerged(condition_Head, condition_Branch, condition_Spilt)
+                    && ismerged(conditionHead, conditionBranch, conditionSpilt)
                     && join(CWD, fileName).exists()) {
                 System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
                 System.exit(0);
@@ -729,47 +734,40 @@ public class Repository implements Serializable {
         boolean hasConflict = false;
         for (String fileName : allFiles) {
             //-1 means file not exist,else restore Sha1 of the Blob
-            String condition_Head = "-1";
-            String condition_Branch = "-1";
-            String condition_Spilt = "-1";
-            if (headTrackedFiles.containsKey(fileName)) {condition_Head = headTrackedFiles.get(fileName);}
-            if (branchTrackedFiles.containsKey(fileName)) {condition_Branch = branchTrackedFiles.get(fileName);}
-            if (splitTrackedFiles.containsKey(fileName)) {condition_Spilt = splitTrackedFiles.get(fileName);}
-
-            if (!condition_Spilt.equals("-1") && condition_Head.equals(condition_Spilt) && !condition_Branch.equals(condition_Spilt) && !condition_Branch.equals("-1")) {
-                targetTrackedFiles.put(fileName, branchTrackedFiles.get(fileName));
-                //Utils.writeContents(join(obj2, branchTrackedFiles.get(fileName)), readContents(join(CWD, fileName)));
+            String conditionHead = "-1";
+            String conditionBranch = "-1";
+            String conditionSpilt = "-1";
+            if (headTrackedFiles.containsKey(fileName)) {
+                conditionHead = headTrackedFiles.get(fileName);
+            }
+            if (branchTrackedFiles.containsKey(fileName)) {
+                conditionBranch = branchTrackedFiles.get(fileName);
+            }
+            if (splitTrackedFiles.containsKey(fileName)) {
+                conditionSpilt = splitTrackedFiles.get(fileName);
             }
 
-            else if (condition_Spilt.equals("-1") && condition_Head.equals("-1") && !condition_Branch.equals("-1")) {
+            if (!conditionSpilt.equals("-1") && conditionHead.equals(conditionSpilt) && !conditionBranch.equals(conditionSpilt) && !conditionBranch.equals("-1")) {
                 targetTrackedFiles.put(fileName, branchTrackedFiles.get(fileName));
-                //Utils.writeContents(join(obj2, branchTrackedFiles.get(fileName)), readContents(join(CWD, fileName)));
-            }
-
-            else if (!condition_Spilt.equals("-1") && condition_Head.equals(condition_Spilt) && condition_Branch.equals("-1")) {
+            } else if (conditionSpilt.equals("-1") && conditionHead.equals("-1") && !conditionBranch.equals("-1")) {
+                targetTrackedFiles.put(fileName, branchTrackedFiles.get(fileName));
+            } else if (!conditionSpilt.equals("-1") && conditionHead.equals(conditionSpilt) && conditionBranch.equals("-1")) {
                 targetTrackedFiles.remove(fileName);
                 stage.getRemoval().add(fileName);
-            }
-
-            else if (!condition_Spilt.equals("-1") && !condition_Head.equals(condition_Spilt) && !condition_Branch.equals(condition_Spilt)
-                && !condition_Head.equals(condition_Branch)) {
-                String newSha1 = jointFiles(condition_Head, condition_Branch);
+            } else if (!conditionSpilt.equals("-1") && !conditionHead.equals(conditionSpilt) && !conditionBranch.equals(conditionSpilt)
+                    && !conditionHead.equals(conditionBranch)) {
+                String newSha1 = jointFiles(conditionHead, conditionBranch);
+                targetTrackedFiles.put(fileName, newSha1);
+                hasConflict = true;
+            } else if (!conditionSpilt.equals("-1") && (!conditionHead.equals(conditionSpilt) && !conditionHead.equals("-1") && conditionBranch.equals("-1"))
+                    || (!conditionBranch.equals(conditionSpilt) && !conditionBranch.equals("-1") && conditionHead.equals("-1"))) {
+                String newSha1 = jointFiles(conditionHead, conditionBranch);
                 //Utils.writeContents(Utils.join(CWD, fileName), Utils.readContents(join(obj2, newSha1)));
                 targetTrackedFiles.put(fileName, newSha1);
                 hasConflict = true;
-            }
-
-            else if (!condition_Spilt.equals("-1") && (!condition_Head.equals(condition_Spilt)&& !condition_Head.equals("-1") && condition_Branch.equals("-1"))
-            || (!condition_Branch.equals(condition_Spilt)&& !condition_Branch.equals("-1") && condition_Head.equals("-1"))) {
-                String newSha1 = jointFiles(condition_Head, condition_Branch);
-                //Utils.writeContents(Utils.join(CWD, fileName), Utils.readContents(join(obj2, newSha1)));
-                targetTrackedFiles.put(fileName, newSha1);
-                hasConflict = true;
-            }
-
-            else if (condition_Spilt.equals("-1") && !condition_Head.equals("-1") && !condition_Branch.equals("-1")
-            && !condition_Head.equals(condition_Branch)) {
-                String newSha1 = jointFiles(condition_Head, condition_Branch);
+            } else if (conditionSpilt.equals("-1") && !conditionHead.equals("-1") && !conditionBranch.equals("-1")
+                    && !conditionHead.equals(conditionBranch)) {
+                String newSha1 = jointFiles(conditionHead, conditionBranch);
                 //Utils.writeContents(Utils.join(CWD, fileName), Utils.readContents(join(obj2, newSha1)));
                 targetTrackedFiles.put(fileName, newSha1);
                 hasConflict = true;
@@ -777,21 +775,20 @@ public class Repository implements Serializable {
         }
 
         for (String fileName : stage.getRemoval()) {
-        //    Utils.restrictedDelete(join(CWD, fileName));
             File file = join(CWD, fileName);
             file.delete();
         }
 
-        if (hasConflict == true) {
+        if (hasConflict) {
             System.out.println("Encountered a merge conflict.");
         }
 
         String message = "Merged " + branchName + " into " + getHeadname() + ".";
         Commit targetCommit = new Commit(message, headSha1, branchSha1, targetTrackedFiles);
         updatePointer(getHeadname(), targetCommit.getSha1());
-        Utils.writeObject(join(obj1, targetCommit.getSha1()), targetCommit);
+        Utils.writeObject(join(OBJ1, targetCommit.getSha1()), targetCommit);
         for (String updateFiles : targetTrackedFiles.keySet()) {
-            Utils.writeContents(Utils.join(CWD, updateFiles), Utils.readContents(join(obj2, targetTrackedFiles.get(updateFiles))));
+            Utils.writeContents(Utils.join(CWD, updateFiles), Utils.readContents(join(OBJ2, targetTrackedFiles.get(updateFiles))));
         }
         stage.clear();
     }
@@ -801,6 +798,6 @@ public class Repository implements Serializable {
             System.out.println("Incorrect operands.");
             System.exit(0);
         }
-        m_merge(args[1]);
+        mMerge(args[1]);
     }
 }

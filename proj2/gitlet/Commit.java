@@ -1,4 +1,5 @@
 package gitlet;
+
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Date;
@@ -13,14 +14,15 @@ public class Commit implements Serializable {
 
     private String message;
 
-    private String parent_1 = null;
-    private String parent_2 = null;
+    private String parent1 = null;
+    private String parent2 = null;
     private Date timestamp;
     private String sha1 = " ";
-    private Map<String,String> trackedFiles;
+    private Map<String, String> trackedFiles;
 
     private static String formatDate(Date date) {
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", java.util.Locale.US);
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z",
+                java.util.Locale.US);
         return sdf.format(date);
     }
 
@@ -37,37 +39,37 @@ public class Commit implements Serializable {
     private String getCommitSha1() {
         return Utils.sha1(
                 this.message,
-                this.parent_1 != null? parent_1: "",
-                this.parent_2 != null? parent_2: "",
+                this.parent1 != null ? parent1 : "",
+                this.parent2 != null ? parent2 : "",
                 this.getTime(),
                 this.trackedFiles.toString()
         );
     }
 
-    public Commit (String message, String parent1, String parent2, Map<String,String> trackedFiles) {
+    public Commit(String message, String parentOne, String parentTwo, Map<String, String> trackedFiles) {
         this.message = message;
-        this.parent_1 = parent1;
-        this.parent_2 = parent2;
+        this.parent1 = parentOne;
+        this.parent2 = parentTwo;
         this.trackedFiles = trackedFiles;
         this.timestamp = new Date();
         this.sha1 = getCommitSha1();
     }
 
-    public Commit (String message, String parent1, Map<String,String> trackedFiles) {
+    public Commit(String message, String parent1, Map<String, String> trackedFiles) {
         this (message, parent1, null, trackedFiles);
     }
 
-    public Commit () {
+    public Commit() {
         this.message = "initial commit";
-        this.parent_2 = null;
-        this.parent_1 = null;
+        this.parent2 = null;
+        this.parent1 = null;
         this.trackedFiles = new HashMap<>();
         this.timestamp = new Date(0);
         this.sha1 = getCommitSha1();
     }
 
     public static Commit getCommit(String s1) {
-        return Utils.readObject(Utils.join(Repository.obj1, s1), Commit.class);
+        return Utils.readObject(Utils.join(Repository.OBJ1, s1), Commit.class);
     }
 
     public static Commit getHeadCommit() {
@@ -79,10 +81,10 @@ public class Commit implements Serializable {
         return trackedFiles == null ? Collections.emptyMap() : trackedFiles;
     }
 
-    public String getParent_1() {
-        return parent_1;
+    public String getParent1() {
+        return parent1;
     }
-    public String getParent_2() {
-        return  parent_2;
+    public String getParent2() {
+        return  parent2;
     }
 }

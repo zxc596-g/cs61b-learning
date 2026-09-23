@@ -12,9 +12,9 @@ public class Stage implements Serializable {
 
     public static final File STAGE = join(Repository.GITLET_DIR, "stage");
 
-    public Stage(){};
+    public Stage() { };
 
-    public boolean stageIsEmpty(){
+    public boolean stageIsEmpty() {
         return (addition.isEmpty() && removal.isEmpty());
     }
 
@@ -23,7 +23,7 @@ public class Stage implements Serializable {
     }
 
     public static Stage load() {
-        if(!STAGE.exists()) {
+        if (!STAGE.exists()) {
             return new Stage();
         }
         return Utils.readObject(STAGE, Stage.class);
