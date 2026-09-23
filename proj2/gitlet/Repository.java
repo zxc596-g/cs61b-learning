@@ -645,9 +645,9 @@ public class Repository implements Serializable {
         String headText = (headContent != null) ? new String(headContent, StandardCharsets.UTF_8) : "";
         String branchText = (branchContent != null) ? new String(branchContent, StandardCharsets.UTF_8) : "";
 
-        String targetContent = "<<<<<<< HEAD\n" + headText + "\n"
+        String targetContent = "<<<<<<< HEAD\n" + headText
                 + "=======\n"
-                + branchText + "\n" + ">>>>>>>\n";
+                + branchText + ">>>>>>>\n";
         byte[] targetText = targetContent.getBytes();
         String targetSha1 = sha1(targetText);
         Utils.writeContents(Utils.join(obj2, targetSha1), targetText);
