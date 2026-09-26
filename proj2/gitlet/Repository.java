@@ -1,5 +1,4 @@
 package gitlet;
-
 import java.io.File;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
@@ -8,6 +7,7 @@ import java.util.*;
 import static gitlet.Utils.*;
 
 public class Repository implements Serializable {
+    static final int SHA1LENGTH = 40;
     /** The current working directory. */
     public static final File CWD = new File(System.getProperty("user.dir"));
     /** The .gitlet directory. */
@@ -251,7 +251,7 @@ public class Repository implements Serializable {
     private static void mGloballog() {
         //init commit exists so obj1 is not null
         for (String s : Utils.plainFilenamesIn(OBJ1)) {
-            if (s.trim().length() == 40) {
+            if (s.trim().length() == SHA1LENGTH) {
                 System.out.println(createlog(s));
             }
         }
@@ -277,7 +277,7 @@ public class Repository implements Serializable {
         //Whether message is null will be determined in the find function
         boolean isfound = false;
         for (String s : Utils.plainFilenamesIn(OBJ1)) {
-            if (s.trim().length() == 40) {
+            if (s.trim().length() == SHA1LENGTH) {
                 Commit commit = Commit.getCommit(s);
                 if (commit.getMessage().equals(message)) {
                     System.out.println(s);
@@ -435,7 +435,7 @@ public class Repository implements Serializable {
     }
 
     private static Commit searchSha1(String preSha) {
-        if (preSha.length() > 40) {
+        if (preSha.length() > SHA1LENGTH) {
             System.out.println("No commit with that id exists.");
             System.exit(0);
         }
@@ -669,8 +669,8 @@ public class Repository implements Serializable {
         return true;
     }
 
-    private static void mMerge(String branchName) {
-        String headName = getHeadname();
+    private static void preCheck(String headName, Stage stage, String splitPointSha1,
+                                 String headSha1, String branchSha1, String branchName) {
         if (!Utils.join(HEADS, branchName).exists()) {
             System.out.println("A branch with that name does not exist.");
             System.exit(0);
@@ -679,15 +679,11 @@ public class Repository implements Serializable {
             System.out.println("Cannot merge a branch with itself.");
             System.exit(0);
         }
-        Stage stage = Stage.load();
         if (!stage.getAddition().isEmpty() || !stage.getRemoval().isEmpty()) {
             System.out.println("You have uncommitted changes.");
             System.exit(0);
         }
-        String splitPointSha1 = searchSplit(branchName);
         //如果分割点是当前分支，那么效果是检出给定分支，操作在打印“当前分支快速前进”的消息后结束。
-        String headSha1 = getHeadSha1();
-        String branchSha1 = Utils.readContentsAsString(Utils.join(HEADS, branchName));
         if (splitPointSha1.equals(headSha1)) {
             mCheckoutBranch(branchName);
             System.out.println("Current branch fast-forwarded.");
@@ -699,16 +695,11 @@ public class Repository implements Serializable {
             System.out.println("Given branch is an ancestor of the current branch.");
             System.exit(0);
         }
+    }
 
-        Map<String, String> headTrackedFiles = new HashMap<>(Commit.getCommit(headSha1).getTrackedFiles());
-        Map<String, String> branchTrackedFiles = new HashMap<>(Commit.getCommit(branchSha1).getTrackedFiles());
-        Map<String, String> splitTrackedFiles = new HashMap<>(Commit.getCommit(splitPointSha1).getTrackedFiles());
-        Map<String, String> targetTrackedFiles = new HashMap<>(Commit.getCommit(headSha1).getTrackedFiles());
-
-        Set<String> allFiles = new HashSet<>(headTrackedFiles.keySet());
-        allFiles.addAll(branchTrackedFiles.keySet());
-        allFiles.addAll(splitTrackedFiles.keySet());
-
+    private static void untrackedCheck(Map<String, String> headTrackedFiles,
+                                       Map<String, String> branchTrackedFiles, Map<String, String> splitTrackedFiles,
+                                       Set<String> allFiles) {
         for (String fileName : allFiles) {
             String conditionHead = "-1";
             String conditionBranch = "-1";
@@ -722,7 +713,6 @@ public class Repository implements Serializable {
             if (splitTrackedFiles.containsKey(fileName)) {
                 conditionSpilt = splitTrackedFiles.get(fileName);
             }
-
             if (isUntracked(Collections.emptySet(), Collections.emptySet(), headTrackedFiles.keySet(), fileName)
                     && ismerged(conditionHead, conditionBranch, conditionSpilt)
                     && join(CWD, fileName).exists()) {
@@ -730,7 +720,24 @@ public class Repository implements Serializable {
                 System.exit(0);
             }
         }
+    }
+    private static void mMerge(String branchName) {
+        String headName = getHeadname();
+        Stage stage = Stage.load();
+        String splitPointSha1 = searchSplit(branchName);
+        String headSha1 = getHeadSha1();
+        String branchSha1 = Utils.readContentsAsString(Utils.join(HEADS, branchName));
+        preCheck(headName, stage, splitPointSha1, headSha1, branchSha1, branchName);
+        Map<String, String> headTrackedFiles = new HashMap<>(Commit.getCommit(headSha1).getTrackedFiles());
+        Map<String, String> branchTrackedFiles = new HashMap<>(Commit.getCommit(branchSha1).getTrackedFiles());
+        Map<String, String> splitTrackedFiles = new HashMap<>(Commit.getCommit(splitPointSha1).getTrackedFiles());
+        Map<String, String> targetTrackedFiles = new HashMap<>(Commit.getCommit(headSha1).getTrackedFiles());
+        Set<String> allFiles = new HashSet<>(headTrackedFiles.keySet());
+        allFiles.addAll(branchTrackedFiles.keySet());
+        allFiles.addAll(splitTrackedFiles.keySet());
 
+        untrackedCheck(headTrackedFiles, branchTrackedFiles, splitTrackedFiles, allFiles);
+        
         boolean hasConflict = false;
         for (String fileName : allFiles) {
             //-1 means file not exist,else restore Sha1 of the Blob
@@ -746,49 +753,49 @@ public class Repository implements Serializable {
             if (splitTrackedFiles.containsKey(fileName)) {
                 conditionSpilt = splitTrackedFiles.get(fileName);
             }
-
-            if (!conditionSpilt.equals("-1") && conditionHead.equals(conditionSpilt) && !conditionBranch.equals(conditionSpilt) && !conditionBranch.equals("-1")) {
+            if (!conditionSpilt.equals("-1") && conditionHead.equals(conditionSpilt)
+                    && !conditionBranch.equals(conditionSpilt) && !conditionBranch.equals("-1")) {
                 targetTrackedFiles.put(fileName, branchTrackedFiles.get(fileName));
             } else if (conditionSpilt.equals("-1") && conditionHead.equals("-1") && !conditionBranch.equals("-1")) {
                 targetTrackedFiles.put(fileName, branchTrackedFiles.get(fileName));
-            } else if (!conditionSpilt.equals("-1") && conditionHead.equals(conditionSpilt) && conditionBranch.equals("-1")) {
+            } else if (!conditionSpilt.equals("-1") && conditionHead.equals(conditionSpilt)
+                    && conditionBranch.equals("-1")) {
                 targetTrackedFiles.remove(fileName);
                 stage.getRemoval().add(fileName);
-            } else if (!conditionSpilt.equals("-1") && !conditionHead.equals(conditionSpilt) && !conditionBranch.equals(conditionSpilt)
+            } else if (!conditionSpilt.equals("-1") && !conditionHead.equals(conditionSpilt)
+                    && !conditionBranch.equals(conditionSpilt)
                     && !conditionHead.equals(conditionBranch)) {
                 String newSha1 = jointFiles(conditionHead, conditionBranch);
                 targetTrackedFiles.put(fileName, newSha1);
                 hasConflict = true;
-            } else if (!conditionSpilt.equals("-1") && (!conditionHead.equals(conditionSpilt) && !conditionHead.equals("-1") && conditionBranch.equals("-1"))
-                    || (!conditionBranch.equals(conditionSpilt) && !conditionBranch.equals("-1") && conditionHead.equals("-1"))) {
+            } else if (!conditionSpilt.equals("-1") && (!conditionHead.equals(conditionSpilt)
+                    && !conditionHead.equals("-1") && conditionBranch.equals("-1"))
+                    || (!conditionBranch.equals(conditionSpilt)
+                    && !conditionBranch.equals("-1") && conditionHead.equals("-1"))) {
                 String newSha1 = jointFiles(conditionHead, conditionBranch);
-                //Utils.writeContents(Utils.join(CWD, fileName), Utils.readContents(join(obj2, newSha1)));
                 targetTrackedFiles.put(fileName, newSha1);
                 hasConflict = true;
             } else if (conditionSpilt.equals("-1") && !conditionHead.equals("-1") && !conditionBranch.equals("-1")
                     && !conditionHead.equals(conditionBranch)) {
                 String newSha1 = jointFiles(conditionHead, conditionBranch);
-                //Utils.writeContents(Utils.join(CWD, fileName), Utils.readContents(join(obj2, newSha1)));
                 targetTrackedFiles.put(fileName, newSha1);
                 hasConflict = true;
             }
         }
-
         for (String fileName : stage.getRemoval()) {
             File file = join(CWD, fileName);
             file.delete();
         }
-
         if (hasConflict) {
             System.out.println("Encountered a merge conflict.");
         }
-
         String message = "Merged " + branchName + " into " + getHeadname() + ".";
         Commit targetCommit = new Commit(message, headSha1, branchSha1, targetTrackedFiles);
         updatePointer(getHeadname(), targetCommit.getSha1());
         Utils.writeObject(join(OBJ1, targetCommit.getSha1()), targetCommit);
         for (String updateFiles : targetTrackedFiles.keySet()) {
-            Utils.writeContents(Utils.join(CWD, updateFiles), Utils.readContents(join(OBJ2, targetTrackedFiles.get(updateFiles))));
+            Utils.writeContents(Utils.join(CWD, updateFiles),
+                    Utils.readContents(join(OBJ2, targetTrackedFiles.get(updateFiles))));
         }
         stage.clear();
     }

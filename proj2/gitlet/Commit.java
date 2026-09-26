@@ -87,4 +87,5 @@ public class Commit implements Serializable {
     public String getParent2() {
         return  parent2;
     }
+    
 }
