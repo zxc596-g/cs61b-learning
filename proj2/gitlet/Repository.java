@@ -491,7 +491,8 @@ public class Repository implements Serializable {
         for (String fileNameInCWD : Utils.plainFilenamesIn(CWD)) {
             if (isUntracked(addition, removal, currentTrackedFile, fileNameInCWD)) {
                 if (targetTrackedFiles.contains(fileNameInCWD)) {
-                    System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                    System.out.println("There is an untracked file in the way;"
+                            + " delete it, or add and commit it first.");
                     System.exit(0);
                 }
             }
@@ -641,8 +642,10 @@ public class Repository implements Serializable {
         if (!conditionBranch.equals("-1")) {
             branchContent = Utils.readContents(Utils.join(OBJ2, conditionBranch));
         }
-        String headText = (headContent != null) ? new String(headContent, StandardCharsets.UTF_8) : "";
-        String branchText = (branchContent != null) ? new String(branchContent, StandardCharsets.UTF_8) : "";
+        String headText = (headContent != null)
+                ? new String(headContent, StandardCharsets.UTF_8) : "";
+        String branchText = (branchContent != null)
+                ? new String(branchContent, StandardCharsets.UTF_8) : "";
 
         String targetContent = "<<<<<<< HEAD\n" + headText
                 + "=======\n"
@@ -697,9 +700,8 @@ public class Repository implements Serializable {
         }
     }
 
-    private static void untrackedCheck(Map<String, String> headTrackedFiles,
-                                       Map<String, String> branchTrackedFiles, Map<String, String> splitTrackedFiles,
-                                       Set<String> allFiles) {
+    private static void untrackedCheck(Map<String, String> headTrackedFiles, Map<String, String> branchTrackedFiles,
+                                       Map<String, String> splitTrackedFiles, Set<String> allFiles) {
         for (String fileName : allFiles) {
             String conditionHead = "-1";
             String conditionBranch = "-1";
@@ -713,7 +715,8 @@ public class Repository implements Serializable {
             if (splitTrackedFiles.containsKey(fileName)) {
                 conditionSpilt = splitTrackedFiles.get(fileName);
             }
-            if (isUntracked(Collections.emptySet(), Collections.emptySet(), headTrackedFiles.keySet(), fileName)
+            if (isUntracked(Collections.emptySet(),
+                    Collections.emptySet(), headTrackedFiles.keySet(), fileName)
                     && ismerged(conditionHead, conditionBranch, conditionSpilt)
                     && join(CWD, fileName).exists()) {
                 System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
@@ -728,19 +731,20 @@ public class Repository implements Serializable {
         String headSha1 = getHeadSha1();
         String branchSha1 = Utils.readContentsAsString(Utils.join(HEADS, branchName));
         preCheck(headName, stage, splitPointSha1, headSha1, branchSha1, branchName);
-        Map<String, String> headTrackedFiles = new HashMap<>(Commit.getCommit(headSha1).getTrackedFiles());
-        Map<String, String> branchTrackedFiles = new HashMap<>(Commit.getCommit(branchSha1).getTrackedFiles());
-        Map<String, String> splitTrackedFiles = new HashMap<>(Commit.getCommit(splitPointSha1).getTrackedFiles());
-        Map<String, String> targetTrackedFiles = new HashMap<>(Commit.getCommit(headSha1).getTrackedFiles());
+        Map<String, String> headTrackedFiles =
+                new HashMap<>(Commit.getCommit(headSha1).getTrackedFiles());
+        Map<String, String> branchTrackedFiles =
+                new HashMap<>(Commit.getCommit(branchSha1).getTrackedFiles());
+        Map<String, String> splitTrackedFiles =
+                new HashMap<>(Commit.getCommit(splitPointSha1).getTrackedFiles());
+        Map<String, String> targetTrackedFiles =
+                new HashMap<>(Commit.getCommit(headSha1).getTrackedFiles());
         Set<String> allFiles = new HashSet<>(headTrackedFiles.keySet());
         allFiles.addAll(branchTrackedFiles.keySet());
         allFiles.addAll(splitTrackedFiles.keySet());
-
         untrackedCheck(headTrackedFiles, branchTrackedFiles, splitTrackedFiles, allFiles);
-        
         boolean hasConflict = false;
         for (String fileName : allFiles) {
-            //-1 means file not exist,else restore Sha1 of the Blob
             String conditionHead = "-1";
             String conditionBranch = "-1";
             String conditionSpilt = "-1";
@@ -753,18 +757,19 @@ public class Repository implements Serializable {
             if (splitTrackedFiles.containsKey(fileName)) {
                 conditionSpilt = splitTrackedFiles.get(fileName);
             }
-            if (!conditionSpilt.equals("-1") && conditionHead.equals(conditionSpilt)
-                    && !conditionBranch.equals(conditionSpilt) && !conditionBranch.equals("-1")) {
+            if (!conditionSpilt.equals("-1")
+                    && conditionHead.equals(conditionSpilt) && !conditionBranch.equals(conditionSpilt)
+                    && !conditionBranch.equals("-1")) {
                 targetTrackedFiles.put(fileName, branchTrackedFiles.get(fileName));
-            } else if (conditionSpilt.equals("-1") && conditionHead.equals("-1") && !conditionBranch.equals("-1")) {
+            } else if (conditionSpilt.equals("-1") && conditionHead.equals("-1")
+                    && !conditionBranch.equals("-1")) {
                 targetTrackedFiles.put(fileName, branchTrackedFiles.get(fileName));
             } else if (!conditionSpilt.equals("-1") && conditionHead.equals(conditionSpilt)
                     && conditionBranch.equals("-1")) {
                 targetTrackedFiles.remove(fileName);
                 stage.getRemoval().add(fileName);
             } else if (!conditionSpilt.equals("-1") && !conditionHead.equals(conditionSpilt)
-                    && !conditionBranch.equals(conditionSpilt)
-                    && !conditionHead.equals(conditionBranch)) {
+                    && !conditionBranch.equals(conditionSpilt) && !conditionHead.equals(conditionBranch)) {
                 String newSha1 = jointFiles(conditionHead, conditionBranch);
                 targetTrackedFiles.put(fileName, newSha1);
                 hasConflict = true;
@@ -775,8 +780,8 @@ public class Repository implements Serializable {
                 String newSha1 = jointFiles(conditionHead, conditionBranch);
                 targetTrackedFiles.put(fileName, newSha1);
                 hasConflict = true;
-            } else if (conditionSpilt.equals("-1") && !conditionHead.equals("-1") && !conditionBranch.equals("-1")
-                    && !conditionHead.equals(conditionBranch)) {
+            } else if (conditionSpilt.equals("-1") && !conditionHead.equals("-1")
+                    && !conditionBranch.equals("-1") && !conditionHead.equals(conditionBranch)) {
                 String newSha1 = jointFiles(conditionHead, conditionBranch);
                 targetTrackedFiles.put(fileName, newSha1);
                 hasConflict = true;

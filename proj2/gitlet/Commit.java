@@ -46,7 +46,8 @@ public class Commit implements Serializable {
         );
     }
 
-    public Commit(String message, String parentOne, String parentTwo, Map<String, String> trackedFiles) {
+    public Commit(String message, String parentOne,
+                  String parentTwo, Map<String, String> trackedFiles) {
         this.message = message;
         this.parent1 = parentOne;
         this.parent2 = parentTwo;
@@ -87,5 +88,5 @@ public class Commit implements Serializable {
     public String getParent2() {
         return  parent2;
     }
-    
+
 }
